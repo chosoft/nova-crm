@@ -28,6 +28,7 @@ export default async function UniversidadesPage() {
           <h1 className="text-2xl font-semibold text-gray-900">Universidades</h1>
           <Link
             href="/universidades/nueva"
+            data-tour="btn-nueva"
             className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
           >
             Nueva Universidad

@@ -1,117 +1,198 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useTour } from "./TourProvider";
 
 export function TourOverlay() {
   const { isActive, currentStep, steps, nextStep, prevStep, endTour } = useTour();
-  const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
-  const [highlightStyle, setHighlightStyle] = useState<React.CSSProperties>({});
-  const tooltipRef = useRef<HTMLDivElement>(null);
+  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [visible, setVisible] = useState(false);
 
+  const updatePosition = useCallback(() => {
+    if (!isActive) return;
+    const step = steps[currentStep];
+    const target = document.querySelector(step.target);
+    if (target) {
+      setTargetRect(target.getBoundingClientRect());
+    } else {
+      setTargetRect(null);
+    }
+  }, [isActive, currentStep, steps]);
+
+  // Show/hide with fade
+  useEffect(() => {
+    if (isActive) {
+      setVisible(true);
+    } else {
+      setVisible(false);
+    }
+  }, [isActive]);
+
+  // Transition between steps
   useEffect(() => {
     if (!isActive) return;
 
+    setIsTransitioning(true);
+    const timer = setTimeout(() => {
+      updatePosition();
+      setIsTransitioning(false);
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [isActive, currentStep, updatePosition]);
+
+  // Update on scroll/resize
+  useEffect(() => {
+    if (!isActive) return;
+
+    const handleUpdate = () => updatePosition();
+    window.addEventListener("resize", handleUpdate);
+    window.addEventListener("scroll", handleUpdate, true);
+    return () => {
+      window.removeEventListener("resize", handleUpdate);
+      window.removeEventListener("scroll", handleUpdate, true);
+    };
+  }, [isActive, updatePosition]);
+
+  // Scroll target into view
+  useEffect(() => {
+    if (!isActive) return;
     const step = steps[currentStep];
     const target = document.querySelector(step.target);
-
-    if (!target) {
-      // If target not found, position tooltip in center
-      setHighlightStyle({ display: "none" });
-      setTooltipStyle({
-        position: "fixed",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-      });
-      return;
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
-
-    const rect = target.getBoundingClientRect();
-    const padding = 8;
-
-    // Highlight around element
-    setHighlightStyle({
-      position: "fixed",
-      top: rect.top - padding,
-      left: rect.left - padding,
-      width: rect.width + padding * 2,
-      height: rect.height + padding * 2,
-      borderRadius: "8px",
-      boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.5)",
-      zIndex: 9998,
-      pointerEvents: "none",
-    });
-
-    // Position tooltip
-    const pos = step.position || "bottom";
-    let top = 0;
-    let left = 0;
-
-    switch (pos) {
-      case "bottom":
-        top = rect.bottom + 16;
-        left = rect.left + rect.width / 2;
-        break;
-      case "top":
-        top = rect.top - 16;
-        left = rect.left + rect.width / 2;
-        break;
-      case "right":
-        top = rect.top + rect.height / 2;
-        left = rect.right + 16;
-        break;
-      case "left":
-        top = rect.top + rect.height / 2;
-        left = rect.left - 16;
-        break;
-    }
-
-    setTooltipStyle({
-      position: "fixed",
-      top,
-      left,
-      transform:
-        pos === "bottom" || pos === "top"
-          ? "translateX(-50%)"
-          : "translateY(-50%)",
-      zIndex: 9999,
-    });
-
-    // Scroll element into view
-    target.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [isActive, currentStep, steps]);
 
-  if (!isActive) return null;
+  if (!isActive && !visible) return null;
 
   const step = steps[currentStep];
+  const padding = 10;
+
+  // Calculate tooltip position
+  let tooltipTop = "50%";
+  let tooltipLeft = "50%";
+  let tooltipTransform = "translate(-50%, -50%)";
+
+  if (targetRect) {
+    const pos = step.position || "bottom";
+    switch (pos) {
+      case "bottom":
+        tooltipTop = `${targetRect.bottom + 16}px`;
+        tooltipLeft = `${targetRect.left + targetRect.width / 2}px`;
+        tooltipTransform = "translateX(-50%)";
+        break;
+      case "top":
+        tooltipTop = `${targetRect.top - 16}px`;
+        tooltipLeft = `${targetRect.left + targetRect.width / 2}px`;
+        tooltipTransform = "translate(-50%, -100%)";
+        break;
+      case "right":
+        tooltipTop = `${targetRect.top + targetRect.height / 2}px`;
+        tooltipLeft = `${targetRect.right + 16}px`;
+        tooltipTransform = "translateY(-50%)";
+        break;
+      case "left":
+        tooltipTop = `${targetRect.top + targetRect.height / 2}px`;
+        tooltipLeft = `${targetRect.left - 16}px`;
+        tooltipTransform = "translate(-100%, -50%)";
+        break;
+    }
+  }
 
   return (
-    <>
-      {/* Overlay highlight */}
-      <div style={highlightStyle} />
+    <div
+      className="fixed inset-0 z-[9990]"
+      style={{
+        opacity: visible ? 1 : 0,
+        transition: "opacity 300ms ease",
+        pointerEvents: isActive ? "auto" : "none",
+      }}
+    >
+      {/* Dark backdrop with hole */}
+      <svg className="fixed inset-0 w-full h-full z-[9991]" style={{ pointerEvents: "none" }}>
+        <defs>
+          <mask id="tour-mask">
+            <rect width="100%" height="100%" fill="white" />
+            {targetRect && (
+              <rect
+                x={targetRect.left - padding}
+                y={targetRect.top - padding}
+                width={targetRect.width + padding * 2}
+                height={targetRect.height + padding * 2}
+                rx={10}
+                ry={10}
+                fill="black"
+                style={{ transition: "all 400ms cubic-bezier(0.4, 0, 0.2, 1)" }}
+              />
+            )}
+          </mask>
+        </defs>
+        <rect
+          width="100%"
+          height="100%"
+          fill="rgba(0,0,0,0.55)"
+          mask="url(#tour-mask)"
+          style={{ transition: "all 400ms cubic-bezier(0.4, 0, 0.2, 1)" }}
+        />
+      </svg>
 
-      {/* Backdrop click to close */}
+      {/* Highlight border */}
+      {targetRect && (
+        <div
+          className="fixed z-[9992] rounded-[10px] border-2 border-white/60 shadow-lg"
+          style={{
+            top: targetRect.top - padding,
+            left: targetRect.left - padding,
+            width: targetRect.width + padding * 2,
+            height: targetRect.height + padding * 2,
+            transition: "all 400ms cubic-bezier(0.4, 0, 0.2, 1)",
+            pointerEvents: "none",
+            boxShadow: "0 0 0 2px rgba(255,255,255,0.3), 0 4px 20px rgba(0,0,0,0.2)",
+          }}
+        />
+      )}
+
+      {/* Click backdrop to close */}
       <div
-        className="fixed inset-0 z-[9997]"
+        className="fixed inset-0 z-[9993]"
         onClick={endTour}
       />
 
       {/* Tooltip */}
       <div
-        ref={tooltipRef}
-        style={tooltipStyle}
-        className="w-80 rounded-xl border border-gray-200 bg-white p-5 shadow-2xl"
+        className="fixed z-[9999] w-80 rounded-xl border border-gray-200 bg-white p-5 shadow-2xl"
+        style={{
+          top: tooltipTop,
+          left: tooltipLeft,
+          transform: tooltipTransform,
+          opacity: isTransitioning ? 0 : 1,
+          transition: "opacity 200ms ease, top 400ms cubic-bezier(0.4, 0, 0.2, 1), left 400ms cubic-bezier(0.4, 0, 0.2, 1)",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Progress bar */}
+        <div className="mb-3 flex items-center gap-1.5">
+          {steps.map((_, i) => (
+            <div
+              key={i}
+              className="h-1 flex-1 rounded-full transition-colors duration-300"
+              style={{
+                backgroundColor: i <= currentStep ? "#111827" : "#e5e7eb",
+              }}
+            />
+          ))}
+        </div>
+
         {/* Step counter */}
         <div className="mb-2 flex items-center justify-between">
           <span className="text-xs font-medium text-gray-400">
-            {currentStep + 1} de {steps.length}
+            Paso {currentStep + 1} de {steps.length}
           </span>
           <button
             onClick={endTour}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-md hover:bg-gray-100"
             aria-label="Cerrar tour"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -125,22 +206,22 @@ export function TourOverlay() {
         <p className="mt-2 text-sm text-gray-600 leading-relaxed">{step.content}</p>
 
         {/* Navigation */}
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-5 flex items-center justify-between">
           <button
             onClick={prevStep}
             disabled={currentStep === 0}
-            className="rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
           >
-            Anterior
+            ← Anterior
           </button>
           <button
             onClick={nextStep}
-            className="rounded-md bg-gray-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
+            className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-all duration-200 active:scale-95"
           >
-            {currentStep === steps.length - 1 ? "Finalizar" : "Siguiente"}
+            {currentStep === steps.length - 1 ? "✓ Finalizar" : "Siguiente →"}
           </button>
         </div>
       </div>
-    </>
+    </div>
   );
 }
