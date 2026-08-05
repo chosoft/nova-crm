@@ -1,0 +1,90 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  admin
+  miembro
+}
+
+enum Modalidad {
+  stand
+  patrocinador
+}
+
+enum Estado {
+  pendiente
+  contactada
+  confirmada
+  rechazada
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id                  String        @id @default(cuid())
+  email               String        @unique
+  passwordHash        String
+  nombre              String
+  role                Role          @default(miembro)
+  failedLoginAttempts Int           @default(0)
+  lockedUntil         DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  empresas            Empresa[]
+  universidades       Universidad[]
+}
+
+model Empresa {
+  id              String             @id @default(cuid())
+  nombre          String             @unique
+  numeroContacto  String
+  descripcion     String
+  modalidad       Modalidad
+  estado          Estado             @default(pendiente)
+  miembroId       String
+  miembro         User               @relation(fields: [miembroId], references: [id])
+  historial       EmpresaHistorial[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+}
+
+model EmpresaHistorial {
+  id             String   @id @default(cuid())
+  empresaId      String
+  empresa        Empresa  @relation(fields: [empresaId], references: [id])
+  estadoAnterior Estado
+  estadoNuevo    Estado
+  fechaCambio    DateTime @default(now())
+}
+
+model Universidad {
+  id              String           @id @default(cuid())
+  nombre          String
+  nombreContacto  String
+  numeroContacto  String
+  estado          Estado           @default(pendiente)
+  miembroId       String
+  miembro         User             @relation(fields: [miembroId], references: [id])
+  eventos         EventoDifusion[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model EventoDifusion {
+  id             String      @id @default(cuid())
+  universidadId  String
+  universidad    Universidad @relation(fields: [universidadId], references: [id])
+  fecha          DateTime
+  descripcion    String
+  createdAt      DateTime    @default(now())
+}
