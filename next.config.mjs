@@ -6,6 +6,10 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  webpack: (config) => {
+    config.resolve.alias["pg-native"] = false;
+    return config;
+  },
 };
 
 export default nextConfig;
