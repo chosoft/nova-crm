@@ -20,6 +20,15 @@ function SubmitButton() {
   );
 }
 
+interface Miembro {
+  id: string;
+  nombre: string;
+}
+
+interface UniversidadFormProps {
+  miembros: Miembro[];
+}
+
 export interface UniversidadFormState {
   errors?: Record<string, string[]>;
   message?: string;
@@ -28,6 +37,7 @@ export interface UniversidadFormState {
     nombre?: string;
     nombreContacto?: string;
     numeroContacto?: string;
+    miembroId?: string;
   };
 }
 
@@ -40,42 +50,50 @@ async function submitUniversidad(
     nombreContacto: formData.get("nombreContacto") as string,
     numeroContacto: formData.get("numeroContacto") as string,
   };
+  const miembroId = formData.get("miembroId") as string;
 
-  // Client-side Zod validation
   const validationResult = universidadSchema.safeParse(rawData);
+  const fieldErrors: Record<string, string[]> = {};
 
   if (!validationResult.success) {
-    const fieldErrors: Record<string, string[]> = {};
     for (const issue of validationResult.error.issues) {
       const field = issue.path[0]?.toString() ?? "_form";
-      if (!fieldErrors[field]) {
-        fieldErrors[field] = [];
-      }
+      if (!fieldErrors[field]) fieldErrors[field] = [];
       fieldErrors[field].push(issue.message);
     }
+  }
+
+  if (!miembroId) {
+    fieldErrors.miembroId = ["Debes seleccionar quién reclutó esta universidad"];
+  }
+
+  if (Object.keys(fieldErrors).length > 0) {
     return {
       errors: fieldErrors,
       success: false,
-      fieldValues: rawData,
+      fieldValues: { ...rawData, miembroId },
     };
   }
 
-  // Call server action
-  const result: ActionResult = await crearUniversidad(validationResult.data);
+  // Call server action with miembroId
+  const result: ActionResult = await crearUniversidad({
+    ...rawData,
+    miembroId,
+  });
 
   if (!result.success) {
     return {
       errors: result.errors,
       message: result.message,
       success: false,
-      fieldValues: rawData,
+      fieldValues: { ...rawData, miembroId },
     };
   }
 
   return { success: true };
 }
 
-export function UniversidadForm() {
+export function UniversidadForm({ miembros }: UniversidadFormProps) {
   const [state, formAction] = useFormState<UniversidadFormState | undefined, FormData>(
     submitUniversidad,
     undefined
@@ -83,7 +101,6 @@ export function UniversidadForm() {
   const [clientErrors, setClientErrors] = useState<Record<string, string[]>>({});
   const router = useRouter();
 
-  // Redirect on success
   if (state?.success) {
     router.push("/universidades");
     return null;
@@ -93,6 +110,7 @@ export function UniversidadForm() {
     nombre: clientErrors.nombre || state?.errors?.nombre,
     nombreContacto: clientErrors.nombreContacto || state?.errors?.nombreContacto,
     numeroContacto: clientErrors.numeroContacto || state?.errors?.numeroContacto,
+    miembroId: clientErrors.miembroId || state?.errors?.miembroId,
   };
 
   function handleSubmit(formData: FormData) {
@@ -101,18 +119,24 @@ export function UniversidadForm() {
       nombreContacto: formData.get("nombreContacto") as string,
       numeroContacto: formData.get("numeroContacto") as string,
     };
+    const miembroId = formData.get("miembroId") as string;
 
     const result = universidadSchema.safeParse(rawData);
+    const fieldErrors: Record<string, string[]> = {};
 
     if (!result.success) {
-      const fieldErrors: Record<string, string[]> = {};
       for (const issue of result.error.issues) {
         const field = issue.path[0]?.toString() ?? "_form";
-        if (!fieldErrors[field]) {
-          fieldErrors[field] = [];
-        }
+        if (!fieldErrors[field]) fieldErrors[field] = [];
         fieldErrors[field].push(issue.message);
       }
+    }
+
+    if (!miembroId) {
+      fieldErrors.miembroId = ["Debes seleccionar quién reclutó esta universidad"];
+    }
+
+    if (Object.keys(fieldErrors).length > 0) {
       setClientErrors(fieldErrors);
       return;
     }
@@ -133,10 +157,7 @@ export function UniversidadForm() {
       )}
 
       <div>
-        <label
-          htmlFor="nombre"
-          className="block text-sm font-medium text-gray-700"
-        >
+        <label htmlFor="nombre" className="block text-sm font-medium text-gray-700">
           Nombre de la universidad
         </label>
         <input
@@ -146,22 +167,15 @@ export function UniversidadForm() {
           maxLength={100}
           defaultValue={state?.fieldValues?.nombre ?? ""}
           className={`mt-1 block w-full rounded-lg border px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 ${
-            errors.nombre
-              ? "border-red-300 focus:ring-red-500"
-              : "border-gray-300"
+            errors.nombre ? "border-red-300 focus:ring-red-500" : "border-gray-300"
           }`}
           placeholder="Ej: Universidad de los Andes"
         />
-        {errors.nombre && (
-          <p className="mt-1 text-xs text-red-600">{errors.nombre[0]}</p>
-        )}
+        {errors.nombre && <p className="mt-1 text-xs text-red-600">{errors.nombre[0]}</p>}
       </div>
 
       <div>
-        <label
-          htmlFor="nombreContacto"
-          className="block text-sm font-medium text-gray-700"
-        >
+        <label htmlFor="nombreContacto" className="block text-sm font-medium text-gray-700">
           Nombre de contacto
         </label>
         <input
@@ -171,22 +185,15 @@ export function UniversidadForm() {
           maxLength={80}
           defaultValue={state?.fieldValues?.nombreContacto ?? ""}
           className={`mt-1 block w-full rounded-lg border px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 ${
-            errors.nombreContacto
-              ? "border-red-300 focus:ring-red-500"
-              : "border-gray-300"
+            errors.nombreContacto ? "border-red-300 focus:ring-red-500" : "border-gray-300"
           }`}
           placeholder="Ej: María López"
         />
-        {errors.nombreContacto && (
-          <p className="mt-1 text-xs text-red-600">{errors.nombreContacto[0]}</p>
-        )}
+        {errors.nombreContacto && <p className="mt-1 text-xs text-red-600">{errors.nombreContacto[0]}</p>}
       </div>
 
       <div>
-        <label
-          htmlFor="numeroContacto"
-          className="block text-sm font-medium text-gray-700"
-        >
+        <label htmlFor="numeroContacto" className="block text-sm font-medium text-gray-700">
           Número de contacto
         </label>
         <input
@@ -195,15 +202,33 @@ export function UniversidadForm() {
           type="text"
           defaultValue={state?.fieldValues?.numeroContacto ?? ""}
           className={`mt-1 block w-full rounded-lg border px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 ${
-            errors.numeroContacto
-              ? "border-red-300 focus:ring-red-500"
-              : "border-gray-300"
+            errors.numeroContacto ? "border-red-300 focus:ring-red-500" : "border-gray-300"
           }`}
           placeholder="Ej: 3001234567"
         />
-        {errors.numeroContacto && (
-          <p className="mt-1 text-xs text-red-600">{errors.numeroContacto[0]}</p>
-        )}
+        {errors.numeroContacto && <p className="mt-1 text-xs text-red-600">{errors.numeroContacto[0]}</p>}
+      </div>
+
+      <div>
+        <label htmlFor="miembroId" className="block text-sm font-medium text-gray-700">
+          Reclutado por
+        </label>
+        <select
+          id="miembroId"
+          name="miembroId"
+          defaultValue={state?.fieldValues?.miembroId ?? ""}
+          className={`mt-1 block w-full rounded-lg border px-3 py-2 text-sm text-gray-900 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 ${
+            errors.miembroId ? "border-red-300 focus:ring-red-500" : "border-gray-300"
+          }`}
+        >
+          <option value="">Selecciona el miembro que reclutó</option>
+          {miembros.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.nombre}
+            </option>
+          ))}
+        </select>
+        {errors.miembroId && <p className="mt-1 text-xs text-red-600">{errors.miembroId[0]}</p>}
       </div>
 
       <div className="flex justify-end gap-3">

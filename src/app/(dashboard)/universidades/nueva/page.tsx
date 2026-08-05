@@ -1,8 +1,15 @@
 export const dynamic = "force-dynamic";
 
+import { prisma } from "@/lib/db";
 import { UniversidadForm } from "@/components/universidades/UniversidadForm";
 
-export default function NuevaUniversidadPage() {
+export default async function NuevaUniversidadPage() {
+  const miembros = await prisma.user.findMany({
+    where: { role: "miembro" },
+    select: { id: true, nombre: true },
+    orderBy: { nombre: "asc" },
+  });
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex flex-col gap-6">
@@ -15,7 +22,7 @@ export default function NuevaUniversidadPage() {
           </p>
         </div>
 
-        <UniversidadForm />
+        <UniversidadForm miembros={miembros} />
       </div>
     </div>
   );

@@ -20,6 +20,15 @@ function SubmitButton() {
   );
 }
 
+interface Miembro {
+  id: string;
+  nombre: string;
+}
+
+interface EmpresaFormProps {
+  miembros: Miembro[];
+}
+
 export interface EmpresaFormState {
   errors?: Record<string, string[]>;
   message?: string;
@@ -29,6 +38,7 @@ export interface EmpresaFormState {
     numeroContacto?: string;
     descripcion?: string;
     modalidad?: string;
+    miembroId?: string;
   };
 }
 
@@ -43,22 +53,29 @@ async function submitEmpresa(
     modalidad: formData.get("modalidad") as string,
   };
 
-  // Client-side Zod validation
+  // Client-side Zod validation (without miembroId — that's validated server-side)
   const validationResult = empresaSchema.safeParse(rawData);
+  const miembroId = formData.get("miembroId") as string;
+
+  const fieldErrors: Record<string, string[]> = {};
 
   if (!validationResult.success) {
-    const fieldErrors: Record<string, string[]> = {};
     for (const issue of validationResult.error.issues) {
       const field = issue.path[0]?.toString() ?? "_form";
-      if (!fieldErrors[field]) {
-        fieldErrors[field] = [];
-      }
+      if (!fieldErrors[field]) fieldErrors[field] = [];
       fieldErrors[field].push(issue.message);
     }
+  }
+
+  if (!miembroId) {
+    fieldErrors.miembroId = ["Debes seleccionar quién reclutó esta empresa"];
+  }
+
+  if (Object.keys(fieldErrors).length > 0) {
     return {
       errors: fieldErrors,
       success: false,
-      fieldValues: rawData,
+      fieldValues: { ...rawData, miembroId },
     };
   }
 
@@ -70,14 +87,14 @@ async function submitEmpresa(
       errors: result.errors,
       message: result.message,
       success: false,
-      fieldValues: rawData,
+      fieldValues: { ...rawData, miembroId },
     };
   }
 
   return { success: true };
 }
 
-export function EmpresaForm() {
+export function EmpresaForm({ miembros }: EmpresaFormProps) {
   const [state, formAction] = useFormState<EmpresaFormState | undefined, FormData>(
     submitEmpresa,
     undefined
@@ -85,7 +102,6 @@ export function EmpresaForm() {
   const [clientErrors, setClientErrors] = useState<Record<string, string[]>>({});
   const router = useRouter();
 
-  // Redirect on success
   if (state?.success) {
     router.push("/empresas");
     return null;
@@ -96,6 +112,7 @@ export function EmpresaForm() {
     numeroContacto: clientErrors.numeroContacto || state?.errors?.numeroContacto,
     descripcion: clientErrors.descripcion || state?.errors?.descripcion,
     modalidad: clientErrors.modalidad || state?.errors?.modalidad,
+    miembroId: clientErrors.miembroId || state?.errors?.miembroId,
   };
 
   function handleSubmit(formData: FormData) {
@@ -105,18 +122,24 @@ export function EmpresaForm() {
       descripcion: formData.get("descripcion") as string,
       modalidad: formData.get("modalidad") as string,
     };
+    const miembroId = formData.get("miembroId") as string;
 
     const result = empresaSchema.safeParse(rawData);
+    const fieldErrors: Record<string, string[]> = {};
 
     if (!result.success) {
-      const fieldErrors: Record<string, string[]> = {};
       for (const issue of result.error.issues) {
         const field = issue.path[0]?.toString() ?? "_form";
-        if (!fieldErrors[field]) {
-          fieldErrors[field] = [];
-        }
+        if (!fieldErrors[field]) fieldErrors[field] = [];
         fieldErrors[field].push(issue.message);
       }
+    }
+
+    if (!miembroId) {
+      fieldErrors.miembroId = ["Debes seleccionar quién reclutó esta empresa"];
+    }
+
+    if (Object.keys(fieldErrors).length > 0) {
       setClientErrors(fieldErrors);
       return;
     }
@@ -137,10 +160,7 @@ export function EmpresaForm() {
       )}
 
       <div>
-        <label
-          htmlFor="nombre"
-          className="block text-sm font-medium text-gray-700"
-        >
+        <label htmlFor="nombre" className="block text-sm font-medium text-gray-700">
           Nombre de la empresa
         </label>
         <input
@@ -150,22 +170,15 @@ export function EmpresaForm() {
           maxLength={100}
           defaultValue={state?.fieldValues?.nombre ?? ""}
           className={`mt-1 block w-full rounded-lg border px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 ${
-            errors.nombre
-              ? "border-red-300 focus:ring-red-500"
-              : "border-gray-300"
+            errors.nombre ? "border-red-300 focus:ring-red-500" : "border-gray-300"
           }`}
           placeholder="Ej: Coca-Cola"
         />
-        {errors.nombre && (
-          <p className="mt-1 text-xs text-red-600">{errors.nombre[0]}</p>
-        )}
+        {errors.nombre && <p className="mt-1 text-xs text-red-600">{errors.nombre[0]}</p>}
       </div>
 
       <div>
-        <label
-          htmlFor="numeroContacto"
-          className="block text-sm font-medium text-gray-700"
-        >
+        <label htmlFor="numeroContacto" className="block text-sm font-medium text-gray-700">
           Número de contacto
         </label>
         <input
@@ -174,22 +187,15 @@ export function EmpresaForm() {
           type="text"
           defaultValue={state?.fieldValues?.numeroContacto ?? ""}
           className={`mt-1 block w-full rounded-lg border px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 ${
-            errors.numeroContacto
-              ? "border-red-300 focus:ring-red-500"
-              : "border-gray-300"
+            errors.numeroContacto ? "border-red-300 focus:ring-red-500" : "border-gray-300"
           }`}
           placeholder="Ej: 3001234567"
         />
-        {errors.numeroContacto && (
-          <p className="mt-1 text-xs text-red-600">{errors.numeroContacto[0]}</p>
-        )}
+        {errors.numeroContacto && <p className="mt-1 text-xs text-red-600">{errors.numeroContacto[0]}</p>}
       </div>
 
       <div>
-        <label
-          htmlFor="descripcion"
-          className="block text-sm font-medium text-gray-700"
-        >
+        <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700">
           Descripción
         </label>
         <textarea
@@ -199,22 +205,15 @@ export function EmpresaForm() {
           rows={4}
           defaultValue={state?.fieldValues?.descripcion ?? ""}
           className={`mt-1 block w-full rounded-lg border px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 ${
-            errors.descripcion
-              ? "border-red-300 focus:ring-red-500"
-              : "border-gray-300"
+            errors.descripcion ? "border-red-300 focus:ring-red-500" : "border-gray-300"
           }`}
           placeholder="Breve descripción de la empresa y su relación con Nova"
         />
-        {errors.descripcion && (
-          <p className="mt-1 text-xs text-red-600">{errors.descripcion[0]}</p>
-        )}
+        {errors.descripcion && <p className="mt-1 text-xs text-red-600">{errors.descripcion[0]}</p>}
       </div>
 
       <div>
-        <label
-          htmlFor="modalidad"
-          className="block text-sm font-medium text-gray-700"
-        >
+        <label htmlFor="modalidad" className="block text-sm font-medium text-gray-700">
           Modalidad
         </label>
         <select
@@ -222,18 +221,36 @@ export function EmpresaForm() {
           name="modalidad"
           defaultValue={state?.fieldValues?.modalidad ?? ""}
           className={`mt-1 block w-full rounded-lg border px-3 py-2 text-sm text-gray-900 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 ${
-            errors.modalidad
-              ? "border-red-300 focus:ring-red-500"
-              : "border-gray-300"
+            errors.modalidad ? "border-red-300 focus:ring-red-500" : "border-gray-300"
           }`}
         >
           <option value="">Selecciona una modalidad</option>
           <option value="stand">Stand</option>
           <option value="patrocinador">Patrocinador</option>
         </select>
-        {errors.modalidad && (
-          <p className="mt-1 text-xs text-red-600">{errors.modalidad[0]}</p>
-        )}
+        {errors.modalidad && <p className="mt-1 text-xs text-red-600">{errors.modalidad[0]}</p>}
+      </div>
+
+      <div>
+        <label htmlFor="miembroId" className="block text-sm font-medium text-gray-700">
+          Reclutado por
+        </label>
+        <select
+          id="miembroId"
+          name="miembroId"
+          defaultValue={state?.fieldValues?.miembroId ?? ""}
+          className={`mt-1 block w-full rounded-lg border px-3 py-2 text-sm text-gray-900 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 ${
+            errors.miembroId ? "border-red-300 focus:ring-red-500" : "border-gray-300"
+          }`}
+        >
+          <option value="">Selecciona el miembro que reclutó</option>
+          {miembros.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.nombre}
+            </option>
+          ))}
+        </select>
+        {errors.miembroId && <p className="mt-1 text-xs text-red-600">{errors.miembroId[0]}</p>}
       </div>
 
       <div className="flex justify-end gap-3">

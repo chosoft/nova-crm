@@ -17,9 +17,17 @@ export async function crearUniversidad(
 ): Promise<ActionResult> {
   try {
     const session = await auth();
-    const miembroId = session?.user?.id || "public-user";
+    const rawInput = input as { nombre?: string; nombreContacto?: string; numeroContacto?: string; miembroId?: string };
+    const miembroId = rawInput?.miembroId;
 
-    const parsed = universidadSchema.safeParse(input);
+    if (!miembroId) {
+      return {
+        success: false,
+        errors: { miembroId: ["Debes seleccionar quién reclutó esta universidad"] },
+      };
+    }
+
+    const parsed = universidadSchema.safeParse(rawInput);
     if (!parsed.success) {
       const fieldErrors: Record<string, string[]> = {};
       for (const issue of parsed.error.issues) {

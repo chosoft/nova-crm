@@ -1,8 +1,15 @@
 export const dynamic = "force-dynamic";
 
+import { prisma } from "@/lib/db";
 import { EmpresaForm } from "@/components/empresas/EmpresaForm";
 
-export default function NuevaEmpresaPage() {
+export default async function NuevaEmpresaPage() {
+  const miembros = await prisma.user.findMany({
+    where: { role: "miembro" },
+    select: { id: true, nombre: true },
+    orderBy: { nombre: "asc" },
+  });
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex flex-col gap-6">
@@ -15,7 +22,7 @@ export default function NuevaEmpresaPage() {
           </p>
         </div>
 
-        <EmpresaForm />
+        <EmpresaForm miembros={miembros} />
       </div>
     </div>
   );

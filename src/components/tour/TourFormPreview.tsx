@@ -27,6 +27,11 @@ const EMPRESA_FIELDS: FieldInfo[] = [
     description: "Tipo de participación en el evento",
     example: "Stand (presencia física) o Patrocinador (apoyo económico)",
   },
+  {
+    name: "Reclutado por",
+    description: "Miembro del equipo que consiguió o gestionó esta empresa",
+    example: "Selecciona de la lista de miembros registrados",
+  },
 ];
 
 const UNIVERSIDAD_FIELDS: FieldInfo[] = [
@@ -44,6 +49,11 @@ const UNIVERSIDAD_FIELDS: FieldInfo[] = [
     name: "Número de contacto",
     description: "Teléfono de 7 a 15 dígitos del contacto",
     example: "3109876543",
+  },
+  {
+    name: "Reclutado por",
+    description: "Miembro del equipo que gestionó el contacto con esta universidad",
+    example: "Selecciona de la lista de miembros registrados",
   },
 ];
 

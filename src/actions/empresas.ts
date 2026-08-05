@@ -16,9 +16,16 @@ export async function crearEmpresa(
   prevState: ActionResult | undefined,
   formData: FormData
 ): Promise<ActionResult> {
-  // 1. Authenticate user (optional - for linking to member)
+  // 1. Get miembroId from form (required)
   const session = await auth();
-  const miembroId = session?.user?.id || "public-user";
+  const miembroId = formData.get("miembroId") as string;
+
+  if (!miembroId) {
+    return {
+      success: false,
+      errors: { miembroId: ["Debes seleccionar quién reclutó esta empresa"] },
+    };
+  }
 
   // 2. Extract and validate input
   const rawData = {
