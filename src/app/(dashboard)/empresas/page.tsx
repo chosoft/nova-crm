@@ -42,6 +42,7 @@ export default async function EmpresasPage({ searchParams }: EmpresasPageProps) 
           <h1 className="text-2xl font-semibold text-gray-900">Empresas</h1>
           <Link
             href="/empresas/nueva"
+            data-tour="btn-nueva"
             className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
           >
             Nueva Empresa
@@ -49,7 +50,9 @@ export default async function EmpresasPage({ searchParams }: EmpresasPageProps) 
         </div>
 
         {/* Filters */}
-        <EmpresaFilters />
+        <div data-tour="filtros">
+          <EmpresaFilters />
+        </div>
 
         {/* List */}
         {empresas.length === 0 ? (
@@ -92,7 +95,9 @@ export default async function EmpresasPage({ searchParams }: EmpresasPageProps) 
                       {empresa.modalidad}
                     </td>
                     <td className="px-4 py-3">
-                      <EstadoBadge estado={empresa.estado as Estado} />
+                      <span data-tour={empresa === empresas[0] ? "estado-badge" : undefined}>
+                        <EstadoBadge estado={empresa.estado as Estado} />
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {empresa.miembro.nombre}
