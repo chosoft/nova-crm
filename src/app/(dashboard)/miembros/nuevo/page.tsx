@@ -1,0 +1,30 @@
+export const dynamic = "force-dynamic";
+
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { MiembroForm } from "@/components/miembros/MiembroForm";
+
+export default async function NuevoMiembroPage() {
+  const session = await auth();
+
+  if (!session?.user || session.user.role !== "admin") {
+    redirect("/empresas");
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="flex flex-col gap-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Nuevo Miembro
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Completa los datos para registrar un nuevo miembro en el sistema.
+          </p>
+        </div>
+
+        <MiembroForm mode="create" />
+      </div>
+    </div>
+  );
+}

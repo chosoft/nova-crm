@@ -18,6 +18,9 @@ export default function MobileNav({ isAdmin, isLoggedIn = false }: MobileNavProp
     ...(isAdmin
       ? [{ href: "/dashboard", label: "Dashboard" }]
       : []),
+    ...(isAdmin
+      ? [{ href: "/miembros", label: "Miembros" }]
+      : []),
     { href: "/empresas", label: "Empresas" },
     { href: "/universidades", label: "Universidades" },
   ];

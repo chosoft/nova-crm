@@ -17,8 +17,8 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
-  // Dashboard - admin only
-  if (pathname.startsWith("/dashboard")) {
+  // Admin-only routes: dashboard and miembros
+  if (pathname.startsWith("/dashboard") || pathname.startsWith("/miembros")) {
     if (!req.auth) {
       const loginUrl = new URL("/login", req.nextUrl.origin);
       return NextResponse.redirect(loginUrl);

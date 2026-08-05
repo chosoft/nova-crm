@@ -19,6 +19,7 @@ export default async function DashboardLayout({
 
   const navItems = [
     ...(isAdmin ? [{ href: "/dashboard", label: "Dashboard", tour: "nav-dashboard" }] : []),
+    ...(isAdmin ? [{ href: "/miembros", label: "Miembros", tour: "nav-miembros" }] : []),
     { href: "/empresas", label: "Empresas", tour: "nav-empresas" },
     { href: "/universidades", label: "Universidades", tour: "nav-universidades" },
   ];

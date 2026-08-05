@@ -41,7 +41,7 @@ export const authConfig: NextAuthConfig = {
       if (pathname === "/") return true;
 
       // Admin-only routes require login
-      if (pathname.startsWith("/dashboard")) {
+      if (pathname.startsWith("/dashboard") || pathname.startsWith("/miembros")) {
         return isLoggedIn;
       }
 
