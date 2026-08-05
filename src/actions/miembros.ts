@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { handleDatabaseError } from "@/lib/errors";
+import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 
 export interface ActionResult {
@@ -96,6 +97,8 @@ export async function crearMiembro(
       },
     });
 
+    revalidatePath("/miembros");
+
     return {
       success: true,
       message: "Miembro creado exitosamente.",
@@ -180,6 +183,8 @@ export async function editarMiembro(
       data: updateData,
     });
 
+    revalidatePath("/miembros");
+
     return {
       success: true,
       message: "Miembro actualizado exitosamente.",
@@ -237,6 +242,8 @@ export async function eliminarMiembro(id: string): Promise<ActionResult> {
 
     // 5. Delete user
     await prisma.user.delete({ where: { id } });
+
+    revalidatePath("/miembros");
 
     return {
       success: true,

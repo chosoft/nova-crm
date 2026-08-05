@@ -36,6 +36,7 @@ export function MiembroForm({ mode, miembro }: MiembroFormProps) {
   const router = useRouter();
 
   if (state?.success) {
+    router.refresh();
     router.push("/miembros");
     return null;
   }
@@ -46,12 +47,21 @@ export function MiembroForm({ mode, miembro }: MiembroFormProps) {
         <input type="hidden" name="id" value={miembro.id} />
       )}
 
-      {state?.message && (
+      {state?.message && !state?.success && (
         <div
           className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
           role="alert"
         >
           {state.message}
+        </div>
+      )}
+
+      {state?.success && (
+        <div
+          className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700"
+          role="status"
+        >
+          {state.message || "Guardado exitosamente. Redirigiendo..."}
         </div>
       )}
 
