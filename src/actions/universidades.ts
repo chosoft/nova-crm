@@ -17,12 +17,7 @@ export async function crearUniversidad(
 ): Promise<ActionResult> {
   try {
     const session = await auth();
-    if (!session?.user?.id) {
-      return {
-        success: false,
-        message: "Debe iniciar sesión para realizar esta acción",
-      };
-    }
+    const miembroId = session?.user?.id || "public-user";
 
     const parsed = universidadSchema.safeParse(input);
     if (!parsed.success) {
@@ -43,7 +38,7 @@ export async function crearUniversidad(
         nombreContacto: parsed.data.nombreContacto,
         numeroContacto: parsed.data.numeroContacto,
         estado: "pendiente",
-        miembroId: session.user.id,
+        miembroId: miembroId,
       },
     });
 
@@ -104,13 +99,6 @@ export async function agendarEvento(
   input: unknown
 ): Promise<ActionResult> {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return {
-        success: false,
-        message: "Debe iniciar sesión para realizar esta acción",
-      };
-    }
 
     const rawInput = input as { universidadId?: string; fecha?: string; descripcion?: string };
     const universidadId = rawInput?.universidadId;

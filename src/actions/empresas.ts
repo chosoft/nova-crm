@@ -16,14 +16,9 @@ export async function crearEmpresa(
   prevState: ActionResult | undefined,
   formData: FormData
 ): Promise<ActionResult> {
-  // 1. Authenticate user
+  // 1. Authenticate user (optional - for linking to member)
   const session = await auth();
-  if (!session?.user?.id) {
-    return {
-      success: false,
-      message: "Debes iniciar sesión para registrar una empresa.",
-    };
-  }
+  const miembroId = session?.user?.id || "public-user";
 
   // 2. Extract and validate input
   const rawData = {
@@ -71,7 +66,7 @@ export async function crearEmpresa(
         descripcion,
         modalidad,
         estado: "pendiente",
-        miembroId: session.user.id,
+        miembroId: miembroId,
       },
     });
 

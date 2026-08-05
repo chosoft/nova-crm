@@ -9,11 +9,6 @@ import { EstadoBadge } from "@/components/empresas/EstadoBadge";
 type Estado = "pendiente" | "contactada" | "confirmada" | "rechazada";
 
 export default async function UniversidadesPage() {
-  const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
-
   const universidades = await prisma.universidad.findMany({
     orderBy: { nombre: "asc" },
     include: {

@@ -31,13 +31,21 @@ export const authConfig: NextAuthConfig = {
       return session;
     },
     authorized({ auth, request: { nextUrl } }) {
-      // This is called by the middleware
-      // Return true to allow, false to deny (redirect to signIn page)
       const isLoggedIn = !!auth?.user;
-      const isOnLogin = nextUrl.pathname.startsWith("/login");
+      const { pathname } = nextUrl;
 
-      if (isOnLogin) return true; // Always allow login page
-      return isLoggedIn; // Require auth for everything else
+      // Public routes - no login required
+      if (pathname.startsWith("/login")) return true;
+      if (pathname.startsWith("/empresas")) return true;
+      if (pathname.startsWith("/universidades")) return true;
+      if (pathname === "/") return true;
+
+      // Admin-only routes require login
+      if (pathname.startsWith("/dashboard")) {
+        return isLoggedIn;
+      }
+
+      return true;
     },
   },
 };

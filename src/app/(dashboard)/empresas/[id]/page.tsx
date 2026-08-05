@@ -17,9 +17,8 @@ export default async function EmpresaDetailPage({
   params,
 }: EmpresaDetailPageProps) {
   const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
+
+  const isAdmin = session?.user?.role === "admin";
 
   const empresa = await prisma.empresa.findUnique({
     where: { id: params.id },
@@ -34,8 +33,6 @@ export default async function EmpresaDetailPage({
   if (!empresa) {
     notFound();
   }
-
-  const isAdmin = session.user.role === "admin";
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">

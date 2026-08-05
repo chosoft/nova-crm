@@ -4,40 +4,33 @@ import { NextResponse } from "next/server";
 
 const { auth } = NextAuth(authConfig);
 
-const adminOnlyRoutes = ["/dashboard"];
-const memberRoutes = ["/empresas", "/universidades"];
-
 export default auth((req) => {
   const { pathname } = req.nextUrl;
 
-  // 1. If login page → pass through (handled by authorized callback)
-  if (pathname.startsWith("/login")) {
+  // Public routes - always allow
+  if (
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/empresas") ||
+    pathname.startsWith("/universidades") ||
+    pathname === "/"
+  ) {
     return NextResponse.next();
   }
 
-  // 2. If no session → the authorized callback already redirects to /login
-  if (!req.auth) {
-    const loginUrl = new URL("/login", req.nextUrl.origin);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  const userRole = req.auth.user?.role as string | undefined;
-
-  // 3/4. Admin-only routes
-  if (adminOnlyRoutes.some((route) => pathname.startsWith(route))) {
-    if (userRole === "admin") {
-      return NextResponse.next();
+  // Dashboard - admin only
+  if (pathname.startsWith("/dashboard")) {
+    if (!req.auth) {
+      const loginUrl = new URL("/login", req.nextUrl.origin);
+      return NextResponse.redirect(loginUrl);
     }
-    const empresasUrl = new URL("/empresas", req.nextUrl.origin);
-    return NextResponse.redirect(empresasUrl);
-  }
-
-  // 5. Member routes → allow all authenticated
-  if (memberRoutes.some((route) => pathname.startsWith(route))) {
+    if (req.auth.user?.role !== "admin") {
+      const empresasUrl = new URL("/empresas", req.nextUrl.origin);
+      return NextResponse.redirect(empresasUrl);
+    }
     return NextResponse.next();
   }
 
-  // Default: allow authenticated requests
+  // Everything else - allow
   return NextResponse.next();
 });
 

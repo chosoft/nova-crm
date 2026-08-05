@@ -18,9 +18,6 @@ export default async function UniversidadDetailPage({
   params,
 }: UniversidadDetailPageProps) {
   const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
 
   const universidad = await prisma.universidad.findUnique({
     where: { id: params.id },
@@ -36,7 +33,7 @@ export default async function UniversidadDetailPage({
     notFound();
   }
 
-  const isAdmin = session.user.role === "admin";
+  const isAdmin = session?.user?.role === "admin";
   const isConfirmada = universidad.estado === "confirmada";
 
   return (

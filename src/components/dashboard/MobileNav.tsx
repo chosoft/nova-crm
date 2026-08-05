@@ -7,9 +7,10 @@ import { logoutAction } from "@/actions/auth";
 
 interface MobileNavProps {
   isAdmin: boolean;
+  isLoggedIn?: boolean;
 }
 
-export default function MobileNav({ isAdmin }: MobileNavProps) {
+export default function MobileNav({ isAdmin, isLoggedIn = false }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
@@ -87,14 +88,24 @@ export default function MobileNav({ isAdmin }: MobileNavProps) {
                 {item.label}
               </Link>
             ))}
-            <form action={logoutAction} className="mt-4">
-              <button
-                type="submit"
-                className="flex h-11 w-full items-center rounded-md px-4 text-base text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            {isLoggedIn ? (
+              <form action={logoutAction} className="mt-4">
+                <button
+                  type="submit"
+                  className="flex h-11 w-full items-center rounded-md px-4 text-base text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                >
+                  Cerrar sesión
+                </button>
+              </form>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setIsOpen(false)}
+                className="mt-4 flex h-11 items-center rounded-md px-4 text-base text-gray-600 hover:bg-gray-50 hover:text-gray-900"
               >
-                Cerrar sesión
-              </button>
-            </form>
+                Iniciar sesión (Admin)
+              </Link>
+            )}
           </nav>
         </div>
       )}
