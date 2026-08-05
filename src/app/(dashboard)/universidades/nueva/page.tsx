@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { UniversidadForm } from "@/components/universidades/UniversidadForm";
 
 export default function NuevaUniversidadPage() {

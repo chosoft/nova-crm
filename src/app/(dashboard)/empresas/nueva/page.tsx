@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { EmpresaForm } from "@/components/empresas/EmpresaForm";
 
 export default function NuevaEmpresaPage() {
