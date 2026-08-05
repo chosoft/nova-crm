@@ -2,11 +2,13 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
+import { authConfig } from "./auth.config";
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  ...authConfig,
   providers: [
     Credentials({
       credentials: {
@@ -43,14 +45,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         );
 
         if (!isPasswordValid) {
-          // Increment failed login attempts
           const newFailedAttempts = user.failedLoginAttempts + 1;
           const updateData: { failedLoginAttempts: number; lockedUntil?: Date } =
             {
               failedLoginAttempts: newFailedAttempts,
             };
 
-          // Lock account if max attempts reached
           if (newFailedAttempts >= MAX_FAILED_ATTEMPTS) {
             updateData.lockedUntil = new Date(
               Date.now() + LOCKOUT_DURATION_MS
@@ -85,29 +85,4 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
-  session: {
-    strategy: "jwt",
-    maxAge: 86400, // 24 hours
-  },
-  pages: {
-    signIn: "/login",
-  },
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.role = (user as { role: string }).role;
-        token.nombre = user.name;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-        session.user.nombre = token.nombre as string;
-      }
-      return session;
-    },
-  },
 });
