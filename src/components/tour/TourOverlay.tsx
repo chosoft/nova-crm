@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useTour } from "./TourProvider";
+import { TourFormPreview } from "./TourFormPreview";
 
 export function TourOverlay() {
   const { isActive, currentStep, steps, nextStep, prevStep, endTour } = useTour();
@@ -12,6 +13,13 @@ export function TourOverlay() {
   const updatePosition = useCallback(() => {
     if (!isActive) return;
     const step = steps[currentStep];
+
+    // If this step shows a form, don't highlight any element
+    if (step.showForm) {
+      setTargetRect(null);
+      return;
+    }
+
     const target = document.querySelector(step.target);
     if (target) {
       setTargetRect(target.getBoundingClientRect());
@@ -20,7 +28,6 @@ export function TourOverlay() {
     }
   }, [isActive, currentStep, steps]);
 
-  // Show/hide with fade
   useEffect(() => {
     if (isActive) {
       setVisible(true);
@@ -29,7 +36,6 @@ export function TourOverlay() {
     }
   }, [isActive]);
 
-  // Transition between steps
   useEffect(() => {
     if (!isActive) return;
 
@@ -42,7 +48,6 @@ export function TourOverlay() {
     return () => clearTimeout(timer);
   }, [isActive, currentStep, updatePosition]);
 
-  // Update on scroll/resize
   useEffect(() => {
     if (!isActive) return;
 
@@ -55,10 +60,10 @@ export function TourOverlay() {
     };
   }, [isActive, updatePosition]);
 
-  // Scroll target into view
   useEffect(() => {
     if (!isActive) return;
     const step = steps[currentStep];
+    if (step.showForm) return; // Don't scroll for form steps
     const target = document.querySelector(step.target);
     if (target) {
       target.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -69,13 +74,14 @@ export function TourOverlay() {
 
   const step = steps[currentStep];
   const padding = 10;
+  const isFormStep = !!step.showForm;
 
   // Calculate tooltip position
   let tooltipTop = "50%";
   let tooltipLeft = "50%";
   let tooltipTransform = "translate(-50%, -50%)";
 
-  if (targetRect) {
+  if (targetRect && !isFormStep) {
     const pos = step.position || "bottom";
     switch (pos) {
       case "bottom":
@@ -115,7 +121,7 @@ export function TourOverlay() {
         <defs>
           <mask id="tour-mask">
             <rect width="100%" height="100%" fill="white" />
-            {targetRect && (
+            {targetRect && !isFormStep && (
               <rect
                 x={targetRect.left - padding}
                 y={targetRect.top - padding}
@@ -139,9 +145,9 @@ export function TourOverlay() {
       </svg>
 
       {/* Highlight border */}
-      {targetRect && (
+      {targetRect && !isFormStep && (
         <div
-          className="fixed z-[9992] rounded-[10px] border-2 border-white/60 shadow-lg"
+          className="fixed z-[9992] rounded-[10px] border-2 border-white/60"
           style={{
             top: targetRect.top - padding,
             left: targetRect.left - padding,
@@ -155,18 +161,17 @@ export function TourOverlay() {
       )}
 
       {/* Click backdrop to close */}
-      <div
-        className="fixed inset-0 z-[9993]"
-        onClick={endTour}
-      />
+      <div className="fixed inset-0 z-[9993]" onClick={endTour} />
 
-      {/* Tooltip */}
+      {/* Tooltip / Form Panel */}
       <div
-        className="fixed z-[9999] w-80 rounded-xl border border-gray-200 bg-white p-5 shadow-2xl"
+        className={`fixed z-[9999] rounded-xl border border-gray-200 bg-white shadow-2xl ${
+          isFormStep ? "w-96 max-h-[80vh] overflow-y-auto p-5" : "w-80 p-5"
+        }`}
         style={{
-          top: tooltipTop,
-          left: tooltipLeft,
-          transform: tooltipTransform,
+          top: isFormStep ? "50%" : tooltipTop,
+          left: isFormStep ? "50%" : tooltipLeft,
+          transform: isFormStep ? "translate(-50%, -50%)" : tooltipTransform,
           opacity: isTransitioning ? 0 : 1,
           transition: "opacity 200ms ease, top 400ms cubic-bezier(0.4, 0, 0.2, 1), left 400ms cubic-bezier(0.4, 0, 0.2, 1)",
         }}
@@ -178,14 +183,12 @@ export function TourOverlay() {
             <div
               key={i}
               className="h-1 flex-1 rounded-full transition-colors duration-300"
-              style={{
-                backgroundColor: i <= currentStep ? "#111827" : "#e5e7eb",
-              }}
+              style={{ backgroundColor: i <= currentStep ? "#111827" : "#e5e7eb" }}
             />
           ))}
         </div>
 
-        {/* Step counter */}
+        {/* Header */}
         <div className="mb-2 flex items-center justify-between">
           <span className="text-xs font-medium text-gray-400">
             Paso {currentStep + 1} de {steps.length}
@@ -203,7 +206,12 @@ export function TourOverlay() {
 
         {/* Content */}
         <h3 className="text-base font-semibold text-gray-900">{step.title}</h3>
-        <p className="mt-2 text-sm text-gray-600 leading-relaxed">{step.content}</p>
+        {step.content && (
+          <p className="mt-2 text-sm text-gray-600 leading-relaxed">{step.content}</p>
+        )}
+
+        {/* Form preview */}
+        {isFormStep && step.showForm && <TourFormPreview type={step.showForm} />}
 
         {/* Navigation */}
         <div className="mt-5 flex items-center justify-between">

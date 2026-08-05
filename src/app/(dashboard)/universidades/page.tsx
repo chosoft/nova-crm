@@ -43,7 +43,7 @@ export default async function UniversidadesPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-md border border-gray-200">
+          <div data-tour="lista-universidades" className="overflow-hidden rounded-md border border-gray-200">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
