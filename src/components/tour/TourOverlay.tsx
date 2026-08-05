@@ -83,28 +83,63 @@ export function TourOverlay() {
 
   if (targetRect && !isFormStep) {
     const pos = step.position || "bottom";
+    const tooltipWidth = 320; // w-80 = 20rem = 320px
+    const tooltipHeight = 200; // approximate
+    const margin = 16;
+    const viewW = window.innerWidth;
+    const viewH = window.innerHeight;
+
+    let top = 0;
+    let left = 0;
+    let transform = "";
+
     switch (pos) {
       case "bottom":
-        tooltipTop = `${targetRect.bottom + 16}px`;
-        tooltipLeft = `${targetRect.left + targetRect.width / 2}px`;
-        tooltipTransform = "translateX(-50%)";
+        top = targetRect.bottom + margin;
+        left = targetRect.left + targetRect.width / 2;
+        transform = "translateX(-50%)";
         break;
       case "top":
-        tooltipTop = `${targetRect.top - 16}px`;
-        tooltipLeft = `${targetRect.left + targetRect.width / 2}px`;
-        tooltipTransform = "translate(-50%, -100%)";
+        top = targetRect.top - margin;
+        left = targetRect.left + targetRect.width / 2;
+        transform = "translate(-50%, -100%)";
         break;
       case "right":
-        tooltipTop = `${targetRect.top + targetRect.height / 2}px`;
-        tooltipLeft = `${targetRect.right + 16}px`;
-        tooltipTransform = "translateY(-50%)";
+        top = targetRect.top + targetRect.height / 2;
+        left = targetRect.right + margin;
+        transform = "translateY(-50%)";
         break;
       case "left":
-        tooltipTop = `${targetRect.top + targetRect.height / 2}px`;
-        tooltipLeft = `${targetRect.left - 16}px`;
-        tooltipTransform = "translate(-100%, -50%)";
+        top = targetRect.top + targetRect.height / 2;
+        left = targetRect.left - margin;
+        transform = "translate(-100%, -50%)";
         break;
     }
+
+    // Clamp: prevent tooltip from going off-screen
+    // Right edge
+    if (left + tooltipWidth / 2 > viewW - 16) {
+      left = viewW - tooltipWidth - 16;
+      transform = "translateY(-50%)";
+    }
+    // Left edge
+    if (left - tooltipWidth / 2 < 16) {
+      left = 16;
+      transform = pos === "top" ? "translateY(-100%)" : "";
+    }
+    // Bottom edge
+    if (top + tooltipHeight > viewH - 16) {
+      top = targetRect.top - margin - tooltipHeight;
+      if (top < 16) top = 16;
+    }
+    // Top edge
+    if (top < 16) {
+      top = 16;
+    }
+
+    tooltipTop = `${top}px`;
+    tooltipLeft = `${left}px`;
+    tooltipTransform = transform;
   }
 
   return (
